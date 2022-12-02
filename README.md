@@ -13,6 +13,7 @@ The code is designed with a modular structure to facilitate its translation to o
 TO CREATE A NEW FUNCTION in this vein (let's call it function G), proceed as follows:
 
 NEW VARIABLES (done in global_vars.f90)
+
 0) Set lower and upper bounds for the function G: GL, GH
 1) Create a 2-D global vector housing the current kernel coefficients for function G: G_kernCoeff
 2) Create a global vector with length equal to the number of grid points to house the coefficients for the GPR approximation: G_gprCoeff
@@ -21,11 +22,13 @@ NEW VARIABLES (done in global_vars.f90)
 5) Create a global vector with length equal to the number of grid points to house the "cleaned" values of tset_Gz: tset_G. This is what the GPR will operate on
 
 NEW FUNCTIONS (done in aux_functions.f90)
+
 0) Create your new function to be called G(). Follow the template for vRepay or vDefault, i.e., translate input variables into the unit hypercube on which the GPR operates and evaluate the GPR at the current (a) kernel parameters, (b) GPR coefficients, (c) mean and standard-deviation scalars. Note GPR_approx takes the dimension of the problem as well as the hypercube-translated gridpoints as arguments 
 1) Create the function/subroutine that delivers new values for G given other current equilibrium objects, e.g., Bellman equation optimization, prices based on expectations, etc. This will be called in the VFI to provide data to run the GPR on
 2) Create a log-likelihood function tailored to your function G: negLL_G(). Follow the template for negLL_VR() or negLL_VD(). These eliminate extra arguments from the general negLL() function so as to be suitable to be passed to the Nelder-Mead minimization in the main VFI.
 
 CHANGES IN VFI (done in main.f90)
+
 0) Define locally a covariance matrix: K_G. This will be used to generate the (global) GPR coefficients
 1) Normalize global mean and standard deviation parameters to zero and one respectively. Set G_gprCoeff to initial conditions (bearing in mind the logit-transform)
 2) Add the update step for your function G in the VFI loop wherever it belongs. Follow the examples in the code for either new_q or whatever is nearest your application. This portion is automatically parallelized, with logit-transformed results going into the val1 vector, which recollected once all processors have executed.
@@ -37,6 +40,7 @@ CHANGES IN VFI (done in main.f90)
 
 
 TO ADD DIMENSIONS/STATES
+
 0) In global_vars.f90, increase nDims to the highest number of dimensions required by any function
 1) In the "drawInputs" function, add new dimensions as required. Endogenous states are set to be a (scrambled) uniform grid and exogenous states are drawn randomly until a typical set is reached. Follow existing templates.
 2) Make similar changes in the "drawConvergenceInputs" function.
@@ -44,6 +48,7 @@ TO ADD DIMENSIONS/STATES
 
 
 TIPS
+
 1) Different kernel functions can improve performance, but Automatic-Relevance-Determination (ARD) kernels often do not fare well as the likelihood is often maximized by flattening an entire dimension/state. To change the kernel, just change the output of kernelFunc() in aux_functions.f90
 2) Some smoother problems work better with fewer grid points (nInputs in global_vars.f90); others require more. It is a parameter worth experimenting with
 3) Logit-transforming is not always necessary, e.g., for unbounded value functions. I recommend it above for the sake of consistency/universality but it rarely affects performance. It is almost always necessary for bounded functions, though. 
