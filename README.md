@@ -1,5 +1,5 @@
 # costly_information_and_sovereign_risk
-Solution code for "Costly information and sovereign risk" with Grace Weishi Gu
+Solution code for "Costly information and sovereign risk" with Grace Weishi Gu. The algorithm is a Gaussian-Process Dynamic Programming solution in the vein of Scheidigger and Bilionis (2019). Significant alterations are made to improve performance for non-linear sovereign default models. See Appendix A in the paper for the relevant changes. 
 
 Found in solution_code subfolder. Run the jobscript ier_ml.script or compile with MPI in the following order 
 
@@ -8,7 +8,9 @@ global_vars.f90 (contains all global variables)
 aux_functions.f90 (contains all relevant function calls)
 main.f90 (main program, where the value-function iteration is located)
 
-The code is designed with a modular structure to facilitate its translation to other dynamic non-linear models. The solution uses the mode of Gaussian Processes to approximate endogenous functions, such as value, price, and policy functions. To create a new function in this vein (let's call it function G), proceed as follows:
+The code is designed with a modular structure to facilitate its translation to other dynamic non-linear models. The solution uses the mode of Gaussian Processes to approximate endogenous functions, such as value, price, and policy functions. To adapt the code for other purposes, proceed as follows.
+
+TO CREATE A NEW FUNCTION in this vein (let's call it function G), proceed as follows:
 
 NEW VARIABLES (done in global_vars.f90)
 0) Set lower and upper bounds for the function G: GL, GH
@@ -32,4 +34,16 @@ CHANGES IN VFI (done in main.f90)
 5) Optimize the likelihood (negLL_G) of tset_G over the log-10 kernel parameters. This is done in a loop over all starting points with finite likelihoods. Again, follow the template for some other function, e.g., negLL_q
 6) Use the optimal kernel parameters (G_kernCoeff) to create the covariance matrix K_G
 7) Use the matrix K_G to create the GPR coefficients (G_gprCoeff). Once this is done, the function G() will be automatically updated and may be called from anywhere in the code, especially in the next loop.
-8) That's it!
+
+
+TO ADD DIMENSIONS/STATES
+0) In global_vars.f90, increase nDims to the highest number of dimensions required by any function
+1) In the "drawInputs" function, add new dimensions as required. Endogenous states are set to be a (scrambled) uniform grid and exogenous states are drawn randomly until a typical set is reached. Follow existing templates.
+2) Make similar changes in the "drawConvergenceInputs" function.
+3) In the "main.f90" file, scale the drawn inputs (gridPoints) into the unit hypercube (scaledGridPoints) following the call to drawInputs. Use extant code is a template. The GPR always operates on these scaled grid points. 
+
+
+TIPS
+1) Different kernel functions can improve performance, but Automatic-Relevance-Determination (ARD) kernels often do not fare well as the likelihood is often maximized by flattening an entire dimension/state. To change the kernel, just change the output of kernelFunc() in aux_functions.f90
+2) Some smoother problems work better with fewer grid points (nInputs in global_vars.f90); others require more. It is a parameter worth experimenting with
+3) Logit-transforming is not always necessary, e.g., for unbounded value functions. I recommend it above for the sake of consistency/universality but it rarely affects performance. It is almost always necessary for bounded functions, though. 
