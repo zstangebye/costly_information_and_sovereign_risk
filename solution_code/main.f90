@@ -1077,9 +1077,9 @@ program main
             tset_VDz = val3agg(1:nInputs)
 
         else
-            tset_A = val1
-            tset_VR = val2
-            tset_VD = val3
+            tset_Az = val1
+            tset_VRz = val2
+            tset_VDz = val3
         end if
 
         ! Next, we "clean" the point estimates (de-mean and standardize)
